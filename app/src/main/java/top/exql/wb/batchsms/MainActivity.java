@@ -26,22 +26,30 @@ import java.util.Map;
 public class MainActivity extends AppCompatActivity {
 
     private static final int UPDATE_LIST_VIEW = 1;
+    private static final int IMPORT_DATA = 2;
 
     private Boolean isSending = false;
-    private List<String> data = new ArrayList<String>(){{
-        String[] str = new String[]{"在吗？"};
-        for(String s: str)add(s);
-    }};
+    private List<String> data = new ArrayList<String>();
     private Integer alreadySend = 0;
     private Integer sendFailed = 0;
     private Handler handler = new Handler(){
         public void handleMessage(Message msg){
+            ListView listView;
+            ArrayAdapter<String> adapter;
             switch (msg.what){
                 case UPDATE_LIST_VIEW:
-                    ListView listView = findViewById(R.id.list_view);
-                    ArrayAdapter<String> adapter = new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_list_item_1, data);
+                    listView = findViewById(R.id.list_view);
+                    adapter = new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_list_item_1, data);
                     listView.setAdapter(adapter);
                     toastNotice(String.format("成功：%s，失败：%s", alreadySend, sendFailed));
+                    break;
+                case IMPORT_DATA:
+                    listView = findViewById(R.id.list_view);
+                    adapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, data);
+                    listView.setAdapter(adapter);
+//                TextView resultStatusView = findViewById(R.id.resultStatus);
+//                resultStatusView.setText(String.format("成功导入：%s", String.valueOf(data.length)));
+                    Toast.makeText(MainActivity.this, String.format("成功导入：%s", String.valueOf(data.size())), Toast.LENGTH_SHORT).show();
             }
         }
     };
@@ -53,18 +61,22 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Button btSend = findViewById(R.id.button);
         Button btImport = findViewById(R.id.buttonImport);
-
+        checkAndRequestPermission();
+        Toast.makeText(MainActivity.this, String.valueOf(checkCallingOrSelfPermission(Manifest.permission.INTERNET)), Toast.LENGTH_SHORT).show();
 
         btImport.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ListView listView = findViewById(R.id.list_view);
-                ArrayAdapter<String> adapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, data);
-                listView.setAdapter(adapter);
+                new Thread(){
+                    public void run(){
+                        Integer textId = Integer.valueOf(String.valueOf(((TextView)findViewById(R.id.editTextId)).getText()));
+                        data = SmsUtil.getText(textId);
+                        Message msg = new Message();
+                        msg.what = IMPORT_DATA;
+                        handler.sendMessage(msg);
+                    }
+                }.start();
 
-//                TextView resultStatusView = findViewById(R.id.resultStatus);
-//                resultStatusView.setText(String.format("成功导入：%s", String.valueOf(data.length)));
-                Toast.makeText(MainActivity.this, String.format("成功导入：%s", String.valueOf(data.size())), Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -82,7 +94,6 @@ public class MainActivity extends AppCompatActivity {
                             // 获取手机号码
                             TextView editPhoneNum = findViewById(R.id.editPhoneNum);
                             String phoneNum = String.valueOf(editPhoneNum.getText());
-                            Log.i("info", phoneNum);
 
                             while(data.size() > 0){
                                 // 开始发送
@@ -91,7 +102,6 @@ public class MainActivity extends AppCompatActivity {
                                     alreadySend = alreadySend + 1;
                                 }catch (Exception e){
                                     sendFailed = sendFailed + 1;
-                                    e.printStackTrace();
                                 }
 
                                 data.remove(0);
@@ -125,8 +135,9 @@ public class MainActivity extends AppCompatActivity {
 
     public boolean checkAndRequestPermission(){
         if(!(checkCallingOrSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
-                && checkCallingOrSelfPermission(Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED)){
-            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.SEND_SMS, Manifest.permission.READ_PHONE_STATE}, 666);
+                && checkCallingOrSelfPermission(Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
+                && checkCallingOrSelfPermission(Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED)){
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.SEND_SMS, Manifest.permission.READ_PHONE_STATE, Manifest.permission.INTERNET}, 666);
             return false;
         }
         return true;
