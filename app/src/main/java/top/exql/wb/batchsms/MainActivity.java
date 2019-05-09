@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Boolean isSending = false;
     private List<String> data = new ArrayList<String>(){{
-        String[] str = new String[]{"test1", "test2", "test3", "test4"};
+        String[] str = new String[]{"在吗？"};
         for(String s: str)add(s);
     }};
     private Integer alreadySend = 0;
@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
                 if (!isSending){
                     // 检查权限
                     isSending = true;
-                    checkAndRequestPermission();
+                    if(!checkAndRequestPermission())return;
 
                     Thread sendSMSThread = new Thread(new Runnable() {
                         @Override
@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
                             while(data.size() > 0){
                                 // 开始发送
                                 try{
-                                    SmsUtil.sendSMS("10086", "0000");
+                                    SmsUtil.sendSMS(phoneNum, data.get(0));
                                     alreadySend = alreadySend + 1;
                                 }catch (Exception e){
                                     sendFailed = sendFailed + 1;
@@ -123,11 +123,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void checkAndRequestPermission(){
+    public boolean checkAndRequestPermission(){
         if(!(checkCallingOrSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
                 && checkCallingOrSelfPermission(Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED)){
             ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.SEND_SMS, Manifest.permission.READ_PHONE_STATE}, 666);
+            return false;
         }
+        return true;
     }
 
     @Override

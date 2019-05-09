@@ -11,7 +11,7 @@ public class SmsUtil {
         //拆分短信内容（手机短信长度限制）
 //        List<String> divideContents = smsManager.divideMessage(message);
 //        for (String text : divideContents) {
-        smsManager.sendTextMessage("10086", null, "0000", null, null);
+        smsManager.sendTextMessage(phoneNumber, null, message, null, null);
 //        }
     }
 
